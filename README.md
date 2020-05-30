@@ -4,7 +4,7 @@
 * sklonować repo (gitbash / bash; konsola)
 * w głównym folderze uruchomić (z konsoli) `npm install`
 * uruchamianie aplikacji: `node src/srv.js`
-* podstawowa funkcja aplikacji dostępna pod: 
+* podstawowa funkcja aplikacji dostępna pod: http://localhost:8070
 * wyniki z bazy dostępne np po http://localhost:8070/users
 
 
