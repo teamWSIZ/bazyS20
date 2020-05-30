@@ -36,6 +36,14 @@ app.get("/countries", (req, res) => {
         });
 });
 
+app.get("/suppliers", (req, res) => {
+    pool.query('select * from xxx.suppliers order by phone', [],
+        (er, re) => {
+            if (er) throw er;
+            res.send(re.rows);
+        });
+});
+
 
 
 
