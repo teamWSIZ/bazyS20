@@ -21,12 +21,23 @@ app.get("/users", (req, res) => {
     if (req.query.maxusers!==undefined) {
         limit = parseInt(req.query.maxusers)
     }
-    pool.query('select * from fakeuser limit $1', [limit],
+    pool.query('SELECT * FROM fakeuser ORDER BY name LIMIT $1', [limit],
         (er, re) => {
             if (er) throw er;
             res.send(re.rows);
         });
 });
+
+app.get("/countries", (req, res) => {
+    pool.query('select distinct country cc from xxx.customers order by cc', [],
+        (er, re) => {
+            if (er) throw er;
+            res.send(re.rows);
+        });
+});
+
+
+
 
 
 // start the Express server
