@@ -44,6 +44,7 @@ app.get("/suppliers", (req, res) => {
         });
 });
 
+
 app.get("/cards", (req, res) => {
     let catid = req.query.catid;
     if (catid===undefined) {
@@ -58,6 +59,21 @@ app.get("/cards", (req, res) => {
             res.send(re.rows);
         });
 });
+
+app.get("/cards/like", (req, res) => {
+    let id = req.query.id;
+    if (id===undefined) {
+        throw "nie podano numeru kartki";
+    }
+    pool.query('update d1.card set likes= likes + 1 where id=$1', [id],
+        (er, re) => {
+            if (er) throw er;
+            res.send('OK');
+        });
+});
+
+
+
 
 app.get("/add", (req, res) => {
     console.log(`zapytanie http o /add`);
