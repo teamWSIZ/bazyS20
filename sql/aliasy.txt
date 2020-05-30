@@ -1,0 +1,14 @@
+-- użycie aliasu (alias 'ee' do tabeli employees), oraz operatora szukania 'like', i maski '%'
+select distinct f.country
+from fakeuser f
+where f.country like 'Al%';
+
+
+select birthdate, extract(month from birthdate) m, extract(year from birthdate) y
+from employees
+order by m, y;
+
+select o.orderdate, extract(month from o.orderdate) mth
+from orders o
+where orderdate < '2000-01-01';
+

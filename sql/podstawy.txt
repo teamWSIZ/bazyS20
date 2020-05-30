@@ -1,0 +1,18 @@
+
+
+##
+
+set search_path to xxx;
+
+
+select count(*) from customers where city like '%xico%';
+
+
+select * from orders where orderdate < '1996-07-20' order by orderdate;
+
+
+select sum(od.quantity) from orderdetail od;
+
+select count(*) from orderdetail;
+
+select fu.country, count(*) c from fakeuser fu group by fu.country order by c desc;

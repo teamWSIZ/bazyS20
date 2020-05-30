@@ -1,0 +1,42 @@
+--- Funkcje agregujące
+select productid, sum(quantity) suma_sprzedazy
+from orderdetail
+-- where orderdetailid < 1000
+group by productid
+order by suma_sprzedazy;
+
+-- z tabeli fakeuser wypisać ile jest userów z każdego z miast, posortować malejąco
+
+
+select count(*) c, extract(month from o.orderdate) m
+from orders o
+group by m
+order by c desc
+
+
+---
+-- kilka przykładów
+
+select count(*), shipperid
+from orders
+where orderdate < '2000-01-01'
+group by shipperid;
+
+select left('abcd', 2); -- pierwsze 2 litery tekstu
+
+select count(*) c, left(p.productname, 1) first_letter
+from products p
+group by first_letter
+order by c desc, first_letter;
+
+select count(*) c, cs.country
+from customers cs
+group by cs.country
+order by c desc;
+
+select split_part('Abra Kadabra', ' ', 1);   -- pierwszy wyraz w napisie
+
+select count(*) c, split_part(name, ' ', 1) first_name
+from fakeuser
+group by first_name
+order by c desc

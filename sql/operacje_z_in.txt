@@ -1,0 +1,22 @@
+
+
+-- specjalne funkcje postgres
+
+select split_part('Abra Kadabra', ' ', 1);   -- pierwszy wyraz w napisie
+
+select right('abcd', 2); -- podaje dwie ostatnie literki zadanego string-u
+
+select right(split_part('Ariaz Cruz', ' ', 1), 1);  --ostatnia literka pierwszego wyrazu napisu
+
+
+
+-- intruckcja IN -- możliwość specyfikowania większej liczby interesujących nas wyników
+select *
+from customers where country IN ('Germany', 'Spain', 'France')
+order by country;
+
+select *
+from customers
+where right(split_part(contactname, ' ', 1), 1) in ('a', 'e', 'h');
+
+

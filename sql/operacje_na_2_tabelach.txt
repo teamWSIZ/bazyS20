@@ -1,0 +1,34 @@
+
+-- przykład tzw. operacji join
+select *
+from orders o,
+     orderdetail od
+where o.orderid = od.orderid
+  and o.orderid = 20000;
+
+
+-- inny przykład:
+-- wylistować (ostatnie) 10 zamówień z polami: nazwa klienta, data zamówienia
+
+select c.customername, o.orderdate
+from orders o,
+     customers c
+where o.customerid = c.customerid
+order by o.orderdate desc
+limit 100;
+
+-- zadanie: wypisać zamówienia (10) z 'Germany'
+
+
+--
+
+select * from products where productname like 'Ik%';
+-- > produkt o nazwie 'Ikura';
+-- zadanie: znaleźć sumę sprzedaży (pole quantity) tego produktu
+-- nazwa -> productid (w tabeli products); mając productid możemy znaleźć sumę quantity
+
+select sum(od.quantity) / 1000 ikura_sales_quantity
+from products p, orderdetail od
+where p.productid = od.productid
+and p.productname = 'Ikura'
+--(opcjonalnie) -- wyciągnąć informację o tej sprzedaży z 2017r...
