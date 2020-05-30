@@ -44,6 +44,31 @@ app.get("/suppliers", (req, res) => {
         });
 });
 
+app.get("/cards", (req, res) => {
+    let catid = req.query.catid;
+    if (catid===undefined) {
+        catid = 2;
+    }
+    let agent =  ''; //req.get('User-Agent');
+    //todo: znaleźć rozmiar ekranu i ip klienta...
+    console.log(`[${new Date()}] Zapytanie o "cards": kategoria ${catid}`);
+    pool.query('select * from d1.card  where categoryid=$1 order by id ', [catid],
+        (er, re) => {
+            if (er) throw er;
+            res.send(re.rows);
+        });
+});
+
+app.get("/add", (req, res) => {
+    console.log(`zapytanie http o /add`);
+    let a = req.query.a;
+    let b = req.query.b;
+    a = parseInt(a);
+    b = parseInt(b);
+
+    res.send(`wynik dodawania ${a} + ${b} = ${a + b}`);
+});
+
 
 
 
