@@ -1,0 +1,27 @@
+
+
+Cards
+
+INSERT:
+metoda: POST
+url: http://localhost:8070/cards/insert
+body:
+{
+    "categoryid": 100,
+    "title": "Nowa paczka w paczkomacie",
+    "text": "W paczkomacie umieszczono paczkę nr 1245512412451524",
+    "url": "https://inpost.pl"
+}
+
+UPDATE
+metoda: POST
+url: http://localhost:8070/cards/update
+body:
+{
+    "id": 18,
+    "categoryid": 100,
+    "title": "Nowa paczka w paczkomacie INPOST",
+    "text": "W paczkomacie umieszczono paczkę nr 1245512412451524",
+    "url": "https://inpost.pl",
+    "likes": 0
+}
