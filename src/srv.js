@@ -122,6 +122,7 @@ app.delete("/cards/delete", (req, res) => {
 });
 
 
+//All CRUD for /cards implemented
 
 
 
