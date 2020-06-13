@@ -62,7 +62,6 @@ app.get("/cards", (req, res) => {
         catid = 2;
     }
     let agent = ''; //req.get('User-Agent');
-    //todo: znaleźć rozmiar ekranu i ip klienta...
     console.log(`[${new Date()}] Zapytanie o "cards": kategoria ${catid}`);
     pool.query('select * from d1.card  where categoryid=$1 order by id ', [catid],
         (er, re) => {
@@ -87,6 +86,7 @@ app.get("/cards/like", (req, res) => {
 //Przykład: insert elementu (dane przyjdą w request body)
 //request można wysłać np. z aplikacji postman, albo z dowolnej własnej aplikacji intrnetowej
 app.post("/cards/insert", (req, res) => {
+    //todo: admin guard
     let bb = req.body;
     console.log(`Żądanie zapisu: ${JSON.stringify(bb)}`);
     pool.query('insert into d1.card (categoryid, title, text, url) values ($1,$2,$3,$4) returning *',
@@ -99,6 +99,7 @@ app.post("/cards/insert", (req, res) => {
 
 //Przykład modyfikacji istniejących danych; ważne, że przychodzący obiekt (w request.body) ma wypełnione pole `id`
 app.post("/cards/update", (req, res) => {
+    //todo: admin guard
     let bb = req.body;
     console.log(`Żądanie aktualizacji: ${JSON.stringify(bb)}`);
     pool.query('update d1.card set categoryid=$1, title=$2, text=$3, url=$4 where id=$5',
@@ -108,6 +109,17 @@ app.post("/cards/update", (req, res) => {
         });
 });
 
+//usuwanie rekordów z bazy
+app.delete("/cards/delete", (req, res) => {
+    //todo: admin guard
+    let id = req.query.id;
+    console.log(`Żądanie usunięcia rekordu o id: ${id}`);
+    pool.query('delete from d1.card where id=$1',
+        [id], (er, re) => {
+            if (er) throw er;
+            res.send({"result": "OK"});
+        });
+});
 
 
 
