@@ -1,3 +1,4 @@
+drop table cities;
 create table cities
 (
 	id serial not null
