@@ -3,6 +3,17 @@ const app = express();
 
 const {BAD_REQUEST, UNAUTHORIZED, INTERNAL_SERVER_ERROR} = require('http-status-codes');
 
+const fs = require('fs');
+const path = '/home/pm/deploy/vote/'
+// const path = '/run/secrets'
+let dbhost = fs.readFileSync(`${path}/vote_db_host`, 'utf8').toString().trim();
+let dbdb = fs.readFileSync(`${path}/vote_db_db`, 'utf8').toString().trim();
+let dbuser = fs.readFileSync(`${path}/vote_db_user`, 'utf8').toString().trim();
+let dbpass = fs.readFileSync(`${path}/vote_db_pass`, 'utf8').toString().trim();
+const PORT = 2019;
+const AUTH = 'https://denver.wsi.edu.pl:8443/wd-auth';
+
+
 
 const Pool = require('pg').Pool;
 const pool = new Pool({
@@ -12,6 +23,13 @@ const pool = new Pool({
     user: 'student',
     password: 'wsiz#1234'
 });
+// const pool = new Pool({
+//     host: dbhost,
+//     port: 5432,
+//     database: dbdb,
+//     user: dbuser,
+//     password: dbpass
+// });
 
 const NodeCache = require("node-cache");
 const user_cache = new NodeCache({stdTTL: 600});
@@ -28,8 +46,6 @@ const fetch = require("node-fetch");
 // import {v4 as uuidv4} from 'uuid';
 const {v4: uuidv4} = require('uuid');//https://github.com/uuidjs/uuid
 
-const PORT = 2020;
-const AUTH = 'https://denver.wsi.edu.pl:8443/wd-auth';
 
 
 /**
@@ -114,6 +130,25 @@ async function get_active_unregistered_elections(userid, at_timestamp) {
     return rows;
 }
 
+/**
+ * Zwraca wybory dostępne ogólnie na tą chwilę
+ * - otwarte dla danego timestamp-u (po votebegin, i przed voteend),
+ *
+ * Uwaga -- timestamp-y są zone-naive (unaware); zakładamy, że wszystkie są w tej samej strefie
+ * czasowej (np. CEST).
+ *
+ * @param at_timestamp
+ * @returns {Map[]}
+ */
+async function get_active_elections(at_timestamp) {
+    const {rows} = await pool.query(
+            `select *
+             from v2.elections e
+             where $1 between e.votebegin and e.voteend`,
+        [at_timestamp]);
+    return rows;
+}
+
 
 /**
  * Sprawdzenie wyników głosowania, czy są zgodne z regułami. W tej wersji, wszystkie ".value" mają
@@ -128,6 +163,7 @@ function isvalid_v1(votes, eid) {
         if (v.value < 0) return false;
         total += v.value;
         if (total > 1) return false;
+        if (v.electionid !== eid) return false;
     }
     return true;
 }
@@ -266,8 +302,17 @@ app.post("/vote", async (req, res) => {
     console.log(`token:${token} submited vote ${JSON.stringify(votes)}`);
 
     //Znajdźmy electionid odpowiadające podanemu tokenowi
-    const eid = await pool.query('SELECT electionid from v2.tokens where token=$1', [token]);
-    console.log(`token ${token} valid for election_id=${eid}`);
+    const result = await pool.query('SELECT electionid from v2.tokens where token=$1', [token]);
+    console.log(`token ${token} valid for election_id=${JSON.stringify(result)}`);
+    const eid = result.rows[0].electionid;
+
+    //Sprawdzamy, czy te wybory są jeszcze aktywne
+    let allowed_elections = await get_active_elections(new Date());
+    let allowed_electionids = allowed_elections.map(e => e.electionid);
+    if (!allowed_electionids.includes(eid)) {
+        return send_error_response(res, `Given electionid=${electionid} is not allowed`, BAD_REQUEST);
+    }
+
 
 
     if (!isvalid_v1(votes, eid)) {

@@ -12,7 +12,7 @@ RUN npm install
 # RUN npm ci --only=production
 
 # Bundle app source
-COPY ./src/srv.js .
+COPY ./src/vote.js .
 
-EXPOSE 8070
-CMD [ "node", "srv.js" ]
+EXPOSE 2020
+CMD [ "node", "vote.js" ]
