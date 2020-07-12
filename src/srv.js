@@ -139,6 +139,6 @@ app.get("/add", (req, res) => {
 
 // start the Express server
 app.listen(port, () => {
-    console.log(`server started at http://localhost:${port}`);
+    logg(`server started at http://localhost:${port}`);
     pool.query('set search_path to xxx');
 });

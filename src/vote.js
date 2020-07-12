@@ -1,35 +1,44 @@
 const express = require("express");
 const app = express();
 
-const {BAD_REQUEST, UNAUTHORIZED, INTERNAL_SERVER_ERROR} = require('http-status-codes');
-
+const {BAD_REQUEST, UNAUTHORIZED, INTERNAL_SERVER_ERROR, GONE} = require('http-status-codes');
+const moment = require('moment');
 const fs = require('fs');
-const path = '/home/pm/deploy/vote/'
-// const path = '/run/secrets'
+
+//todo: adjust for prod
+//const path = '/home/pm/deploy/vote/'
+//const PORT = 2019;
+const PORT = 2020;
+const path = '/run/secrets'
 let dbhost = fs.readFileSync(`${path}/vote_db_host`, 'utf8').toString().trim();
 let dbdb = fs.readFileSync(`${path}/vote_db_db`, 'utf8').toString().trim();
 let dbuser = fs.readFileSync(`${path}/vote_db_user`, 'utf8').toString().trim();
 let dbpass = fs.readFileSync(`${path}/vote_db_pass`, 'utf8').toString().trim();
-const PORT = 2019;
 const AUTH = 'https://denver.wsi.edu.pl:8443/wd-auth';
 
 
-
+//todo: adjust for prod
 const Pool = require('pg').Pool;
-const pool = new Pool({
-    host: '10.10.0.33',
-    port: 5432,
-    database: 'student',
-    user: 'student',
-    password: 'wsiz#1234'
-});
 // const pool = new Pool({
-//     host: dbhost,
+//     host: '10.10.0.33',
 //     port: 5432,
-//     database: dbdb,
-//     user: dbuser,
-//     password: dbpass
+//     database: 'student',
+//     user: 'student',
+//     password: 'wsiz#1234'
 // });
+const pool = new Pool({
+    host: dbhost,
+    port: 5432,
+    database: dbdb,
+    user: dbuser,
+    password: dbpass
+});
+
+logg = function (msg, type='INFO') {
+    console.log(`[${moment().format()}] ${type} ${msg}`);
+}
+
+logg(`using db ${dbhost}/${dbdb}`);
 
 const NodeCache = require("node-cache");
 const user_cache = new NodeCache({stdTTL: 600});
@@ -74,9 +83,8 @@ async function send_ok_response(res, message = 'OK') {
 async function login(user, md5pass) {
     let url = `${AUTH}/auth?album=${user}&pass=${md5pass}`
     let res = await fetch(url, {agent});
-    console.log(`res=${res}`)
     let authtoken = (await res.text()).substr(1, 36);
-    console.log(`userid=${user} logged in, authtoken:${authtoken}`);
+    logg(`user logged in`)
     return authtoken;
 }
 
@@ -91,7 +99,6 @@ async function login(user, md5pass) {
 async function get_userid(authtoken) {
     if (user_cache.has(authtoken)) {
         let userid = user_cache.get(authtoken);
-        console.log(`returning cached user: ${userid}`);
         return user_cache.get(authtoken);
     } else {
         //ask user DB
@@ -99,7 +106,6 @@ async function get_userid(authtoken) {
         let res = await fetch(url, {agent});
         let data = await res.json();
         let uuid = data.studentid;
-        console.log(`WD: userid=${uuid}`);
         user_cache.set(authtoken, uuid);
         return uuid;
     }
@@ -270,10 +276,10 @@ app.get('/register', async (req, res) => {
 
     } catch (e) {
         await pool.query('ROLLBACK');
-        console.log(`Error of token generation for userid=${userid} and electionid=${electionid}`);
+        logg(`Error of token generation for userid=${userid} and electionid=${electionid}`, 'ERROR');
         return send_error_response(res, 'Error in election_token generation', INTERNAL_SERVER_ERROR);
     }
-    console.log(`Token generated for userid=${userid} and electionid=${electionid}`);
+    logg(`Token generated for userid=${userid} and electionid=${electionid}`);
     res.send({'election_token': token});
 });
 
@@ -299,21 +305,17 @@ app.post("/vote", async (req, res) => {
     } catch (e) {
         return send_error_response(res, 'Missing election_token', BAD_REQUEST);
     }
-    console.log(`token:${token} submited vote ${JSON.stringify(votes)}`);
 
     //Znajdźmy electionid odpowiadające podanemu tokenowi
     const result = await pool.query('SELECT electionid from v2.tokens where token=$1', [token]);
-    console.log(`token ${token} valid for election_id=${JSON.stringify(result)}`);
     const eid = result.rows[0].electionid;
 
     //Sprawdzamy, czy te wybory są jeszcze aktywne
     let allowed_elections = await get_active_elections(new Date());
     let allowed_electionids = allowed_elections.map(e => e.electionid);
     if (!allowed_electionids.includes(eid)) {
-        return send_error_response(res, `Given electionid=${electionid} is not allowed`, BAD_REQUEST);
+        return send_error_response(res, `Given electionid=${eid} is not allowed anymore`, GONE);
     }
-
-
 
     if (!isvalid_v1(votes, eid)) {
         return send_error_response(res, 'invalid vote', BAD_REQUEST);
@@ -326,15 +328,13 @@ app.post("/vote", async (req, res) => {
         //Token musi zostać unieważniony; (nowego dla danego usera już się nie wygeneruje)
         let resultset = await pool.query('DELETE FROM v2.tokens where token=$1 returning *', [token]);
         let deleted_count = resultset.rowCount;
-        console.log(`deleted tokens: ${deleted_count}`);
         if (deleted_count !== 1) {
-            console.log(`Vote manipulation detected for token ${token};`);
+            logg(`Vote manipulation detected for token ${token}; ${new Date()}`, 'ERROR');
             throw new Error('invalid vote');
         }
 
         //Zapis każdego z głosów
         for (const v of votes) {
-            console.log(`vote to save: ${JSON.stringify(v)}`);
             await pool.query('INSERT INTO v2.votes(electionid, choiceid, value) VALUES ($1, $2, $3)',
                 [v.electionid, v.choiceid, v.value]);
         }
@@ -343,9 +343,10 @@ app.post("/vote", async (req, res) => {
 
     } catch (e) {
         await pool.query('ROLLBACK');
-        console.log(`Error of vote saving for token ${token}`);
+        logg(`Error of vote saving for token ${token}`, 'ERROR');
         return send_error_response(res, 'Error of vote saving', INTERNAL_SERVER_ERROR);
     }
+    logg(`Valid vote submitted for election ${eid}`);
 
     res.send({"result": 'OK'});
 });
@@ -353,5 +354,5 @@ app.post("/vote", async (req, res) => {
 
 // start the Express server
 app.listen(PORT, () => {
-    console.log(`server started at http://localhost:${PORT}`);
+    logg(`server started at http://localhost:${PORT}`);
 });
