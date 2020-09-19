@@ -4,7 +4,6 @@ const port = 9081; // default port to listen
 const moment = require('moment');
 
 
-
 const Pool = require('pg').Pool;
 const pool = new Pool({
     host: '10.10.0.33',
@@ -14,7 +13,7 @@ const pool = new Pool({
     password: 'wsiz#1234'
 });
 
-logg = function (msg, type='INFO') {
+logg = function (msg, type = 'INFO') {
     console.log(`[${moment().format()}] ${type} ${msg}`);
 }
 
@@ -47,13 +46,38 @@ app.get("/users", (req, res) => {
 /**
 
  a) listowanie urządzeń
-/user/devices?userid=728 ---> wszystkie device przypisane do usera o userid=728
+ /user/devices?userid=728 ---> wszystkie device przypisane do usera o userid=728
 
  b) dodawnie urządzeń
-/user/devices/add?userid=728&deviceid=E3:AF:FF:18:D3:99
+ /user/devices/add?userid=728&deviceid=E3:AF:FF:18:D3:99
 
 
  */
+
+// Urządzenia zadanego usera
+app.get("/user/devices", (req, res) => {
+    let userid = req.query.userid;
+
+    pool.query('select d from p21.devices d, p21.userdevices ud where d.deviceid=ud.deviceid and ud.userid=$1',
+        [userid],
+        (er, re) => {
+            if (er) throw er;
+            res.send(re.rows);
+        });
+});
+
+//Przypisywanie urządzeń do usera..
+app.get("/user/devices/add", (req, res) => {
+    let userid = req.query.userid;
+    let deviceid = req.query.deviceid;
+
+    pool.query('insert into p21.userdevices(userid, deviceid) VALUES ($1, $2) returning *;',
+        [userid, deviceid],
+        (er, re) => {
+            if (er) throw er;
+            res.send(re.rows);
+        });
+});
 
 
 app.get("/add", (req, res) => {
