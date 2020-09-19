@@ -1,3 +1,5 @@
+create schema adadasdasdwer;
+set search_path to adadasdasdwer;
 
 -- userid can be some company's internal ID (so a link to more personal data, RODO etc),or
 -- just a phone number; alias can accomodate extra data (e.g. json with user data
